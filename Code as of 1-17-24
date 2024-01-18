@@ -1,0 +1,96 @@
+from bs4 import BeautifulSoup
+import requests
+import re
+import time 
+
+def extract_nutrient_value(text):
+    match = re.search(r'(\d+(\.\d+)?)', text)
+    return match.group(1) if match else None
+
+
+def parse_food_item_fat(url):
+	food_item_html=requests.get(url).text
+	soup=BeautifulSoup(food_item_html, 'lxml')
+	food_fact=soup.find_all('span',class_='nutfactstopnutrient')
+	for fact in food_fact:
+		if 'Total Fat' in fact.text:
+			total_fat=fact.find('b').next_sibling.strip()
+			print("Total Fat:",total_fat)
+	
+
+def parse_food_item_carb(url):
+    food_item_html = requests.get(url).text
+    soup = BeautifulSoup(food_item_html, 'lxml')
+    food_fact_carb = soup.find_all('span', class_='nutfactstopnutrient')
+    for fact in food_fact_carb:
+    	if 'Total Carbohydrate' in fact.text:
+    		total_carb=fact.find('b').next_sibling.strip()
+    		print("Total Carbohydrates:",total_carb)
+   
+def parse_food_item_cholest(url):
+	food_item_html=requests.get(url).text
+	soup=BeautifulSoup(food_item_html, 'lxml')
+	food_fact_cholest=soup.find_all('span',class_='nutfactstopnutrient')
+	for fact in food_fact_cholest:
+		if 'Cholesterol' in fact.text:
+			total_cholest= fact.find('b').next_sibling.strip()
+			print("Total Cholesterol:", total_cholest)
+
+def parse_food_item_sodium(url):
+    food_item_html = requests.get(url).text
+    soup = BeautifulSoup(food_item_html, 'lxml')
+    food_fact_sodium = soup.find_all('span', class_='nutfactstopnutrient')
+    
+    sodium_found = False
+    for fact in food_fact_sodium:
+        if 'Sodium' in fact.text:
+            total_sodium = extract_nutrient_value(fact.text)
+            if total_sodium:
+                print("Total Sodium:", total_sodium, "mg")
+                sodium_found = True
+    			
+    if not sodium_found:
+        print("No Sodium Found")
+
+
+
+def parse_food_item_protein(url):
+    food_item_html = requests.get(url).text
+    soup = BeautifulSoup(food_item_html, 'lxml')
+    food_fact_protein = soup.find_all('span', class_='nutfactstopnutrient')
+    
+    for fact in food_fact_protein:
+        if "Protein" in fact.text:
+            total_protein = extract_nutrient_value(fact.text)
+            if total_protein:
+                print(" Total Protein:", total_protein, "g")
+
+
+print('Put the dining hall( South, Y, 251)')
+U_ans = None
+Dining_hall= input('>')
+if Dining_hall=="South":
+	U_ans=16
+elif Dining_hall== "Y":
+	U_ans=19
+elif Dining_hall=='251':
+	U_ans=51
+html_text=requests.get(f'https://nutrition.umd.edu/?locationNum={U_ans}&dtdate=10/13/2023')
+soup=BeautifulSoup(html_text.content,'lxml')
+food_cards= soup.find_all('div',class_='card')
+for food_card in food_cards:
+	food_name=[item.text for item in food_card.find_all('a','menu-item-name')]
+	food_links=[item['href'].split("=")[-1]for item in food_card.find_all('a','menu-item-name')]
+	for i in range(len(food_name)):
+		print(food_name[i])
+		
+		food_item_url= f'https://nutrition.umd.edu/label.aspx?RecNumAndPort={food_links[i]}'
+		parse_food_item_fat(food_item_url)
+		parse_food_item_carb(food_item_url)
+		parse_food_item_cholest(food_item_url)
+		parse_food_item_sodium(food_item_url)
+		parse_food_item_protein(food_item_url)
+		
+		
+	print('-------------------------------')
+
